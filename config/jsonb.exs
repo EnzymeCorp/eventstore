@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :logger, backends: []
 
@@ -9,14 +9,14 @@ config :ex_unit,
 
 default_config = [
   column_data_type: "jsonb",
+  metadata_column_data_type: "jsonb",
   username: "postgres",
   password: "postgres",
   database: "eventstore_jsonb_test",
   hostname: "localhost",
   pool_size: 1,
-  pool_overflow: 0,
-  registry: :local,
   serializer: EventStore.JsonbSerializer,
+  metadata_serializer: EventStore.JsonbSerializer,
   subscription_retry_interval: 1_000,
   types: EventStore.PostgresTypes
 ]
@@ -28,6 +28,5 @@ config :eventstore,
        Keyword.put(default_config, :database, "eventstore_jsonb_test_2")
 
 config :eventstore, SchemaEventStore, default_config
-config :eventstore, DistributedEventStore, Keyword.put(default_config, :registry, :distributed)
 
 config :eventstore, event_stores: [TestEventStore, SecondEventStore, SchemaEventStore]

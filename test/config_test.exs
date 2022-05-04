@@ -16,13 +16,16 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
+               pool: EventStore.Config.get_pool(),
                timeout: 120_000,
                schema: "example",
                password: "postgres",
                database: "eventstore_test",
                hostname: "localhost",
-               username: "postgres",
-               pool: EventStore.Config.get_pool()
+               username: "postgres"
              ]
   end
 
@@ -38,13 +41,38 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                timeout: 120_000,
                password: "postgres",
                database: "eventstore_test",
                socket: "/path/to/socket",
-               username: "postgres",
-               pool: EventStore.Config.get_pool()
+               username: "postgres"
+             ]
+  end
+
+  test "parse `:shared_connection_pool`" do
+    config = [
+      username: "postgres",
+      database: "eventstore_test",
+      password: "postgres",
+      shared_connection_pool: :shared_pool
+    ]
+
+    assert Config.parse(config) ==
+             [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
+               schema: "public",
+               pool: EventStore.Config.get_pool(),
+               shared_connection_pool: :shared_pool,
+               password: "postgres",
+               database: "eventstore_test",
+               username: "postgres"
              ]
   end
 
@@ -60,13 +88,16 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                timeout: 120_000,
                password: "postgres",
                database: "eventstore_test",
                socket_dir: "/path/to/socket_dir",
-               username: "postgres",
-               pool: EventStore.Config.get_pool()
+               username: "postgres"
              ]
   end
 
@@ -75,12 +106,15 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                username: "username",
                password: "password",
                database: "database",
-               hostname: "localhost",
-               pool: EventStore.Config.get_pool()
+               hostname: "localhost"
              ]
   end
 
@@ -91,15 +125,18 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                username: "username",
                password: "password",
                database: "database",
                hostname: "localhost",
                timeout: 120_000,
                pool_size: 5,
-               ssl: true,
-               pool: EventStore.Config.get_pool()
+               ssl: true
              ]
   end
 
@@ -110,12 +147,15 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                username: "username",
                password: "password",
                database: "database",
-               hostname: "localhost",
-               pool: EventStore.Config.get_pool()
+               hostname: "localhost"
              ]
   end
 
@@ -140,14 +180,17 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
+               pool: EventStore.Config.get_pool(),
                timeout: 120_000,
                port: 5432,
                hostname: "hostname",
                database: "database",
                password: "password",
-               username: "username",
-               pool: EventStore.Config.get_pool()
+               username: "username"
              ]
   end
 
@@ -156,9 +199,12 @@ defmodule EventStore.ConfigTest do
 
     assert Config.parse(config) ==
              [
+               enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
+               column_data_type: "bytea",
                schema: "public",
-               username: "default_username",
-               pool: EventStore.Config.get_pool()
+               pool: EventStore.Config.get_pool(),
+               username: "default_username"
              ]
   end
 
