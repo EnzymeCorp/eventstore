@@ -1,9 +1,9 @@
-use Mix.Config
+import Config
 
 config :logger, backends: []
 
 config :ex_unit,
-  capture_log: true,
+  capture_log: [level: :warn],
   assert_receive_timeout: 2_000,
   refute_receive_timeout: 100
 
@@ -14,6 +14,7 @@ default_config = [
   hostname: "localhost",
   pool_size: 1,
   serializer: EventStore.JsonSerializer,
+  metadata_serializer: EventStore.JsonSerializer,
   subscription_retry_interval: 1_000
 ]
 

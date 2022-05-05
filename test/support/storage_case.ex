@@ -8,6 +8,7 @@ defmodule EventStore.StorageCase do
   setup_all do
     config = Config.parsed(@event_store, :eventstore)
     serializer = Serializer.serializer(@event_store, config)
+    metadata_serializer = Serializer.metadata_serializer(@event_store, config)
     postgrex_config = Config.default_postgrex_opts(config)
 
     if Mix.env() == :migration do
@@ -24,7 +25,8 @@ defmodule EventStore.StorageCase do
       schema: "public",
       event_store: @event_store,
       postgrex_config: postgrex_config,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     ]
   end
 

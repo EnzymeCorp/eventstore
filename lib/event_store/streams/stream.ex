@@ -7,9 +7,19 @@ defmodule EventStore.Streams.Stream do
   def append_to_stream(conn, stream_uuid, expected_version, events, opts)
       when length(events) < 1000 do
     {serializer, new_opts} = Keyword.pop(opts, :serializer)
+    {metadata_serializer, nn_opts} = Keyword.pop(new_opts, :metadata_serializer, serializer)
 
-    with {:ok, stream} <- stream_info(conn, stream_uuid, expected_version, new_opts),
-         :ok <- do_append_to_storage(conn, stream, events, expected_version, serializer, new_opts) do
+    with {:ok, stream} <- stream_info(conn, stream_uuid, expected_version, nn_opts),
+         :ok <-
+           do_append_to_storage(
+             conn,
+             stream,
+             events,
+             expected_version,
+             serializer,
+             metadata_serializer,
+             nn_opts
+           ) do
       :ok
     end
     |> maybe_retry_once(conn, stream_uuid, expected_version, events, opts)
@@ -17,6 +27,7 @@ defmodule EventStore.Streams.Stream do
 
   def append_to_stream(conn, stream_uuid, expected_version, events, opts) do
     {serializer, new_opts} = Keyword.pop(opts, :serializer)
+    {metadata_serializer, nn_opts} = Keyword.pop(new_opts, :metadata_serializer)
 
     transaction(
       conn,
@@ -29,7 +40,8 @@ defmodule EventStore.Streams.Stream do
                  events,
                  expected_version,
                  serializer,
-                 new_opts
+                 metadata_serializer,
+                 nn_opts
                ) do
           :ok
         else
@@ -40,27 +52,6 @@ defmodule EventStore.Streams.Stream do
     )
     |> maybe_retry_once(conn, stream_uuid, expected_version, events, opts)
   end
-
-  defp maybe_retry_once(
-         {:error, :duplicate_stream_uuid},
-         conn,
-         stream_uuid,
-         expected_version,
-         events,
-         opts
-       ) do
-    unless Keyword.has_key?(opts, :retried_once) do
-      opts = Keyword.put(opts, :retried_once, true)
-
-      append_to_stream(conn, stream_uuid, expected_version, events, opts)
-    else
-      # We should never get here, but just in case we break something in another
-      # part of the app, this will give us better output in the tests.
-      {:error, :already_retried_once}
-    end
-  end
-
-  defp maybe_retry_once(error, _conn, _stream_uuid, _expected_version, _events, _opts), do: error
 
   def link_to_stream(conn, stream_uuid, expected_version, events_or_event_ids, opts) do
     transaction(
@@ -77,6 +68,8 @@ defmodule EventStore.Streams.Stream do
       opts
     )
   end
+
+  def paginate_streams(conn, opts), do: Storage.paginate_streams(conn, opts)
 
   def read_stream_forward(conn, stream_uuid, start_version, count, opts) do
     with {:ok, stream} <- stream_info(conn, stream_uuid, :stream_exists, opts) do
@@ -114,8 +107,9 @@ defmodule EventStore.Streams.Stream do
     do: {:error, :invalid_start_from}
 
   def stream_version(conn, stream_uuid, opts) do
-    with {:ok, %StreamInfo{stream_version: stream_version}} <-
-           stream_info(conn, stream_uuid, :any_version, opts) do
+    with {:ok, stream} <- stream_info(conn, stream_uuid, :any_version, opts) do
+      %StreamInfo{stream_version: stream_version} = stream
+
       {:ok, stream_version}
     end
   end
@@ -132,10 +126,13 @@ defmodule EventStore.Streams.Stream do
     end
   end
 
-  defp stream_info(conn, stream_uuid, expected_version, opts) do
+  def stream_info(conn, stream_uuid, expected_version, opts) do
     opts = query_opts(opts)
 
-    StreamInfo.read(conn, stream_uuid, expected_version, opts)
+    with {:ok, stream_info} <- Storage.stream_info(conn, stream_uuid, opts),
+         :ok <- StreamInfo.validate_expected_version(stream_info, expected_version) do
+      {:ok, stream_info}
+    end
   end
 
   # Create stream when it doesn't yet exist.
@@ -158,18 +155,19 @@ defmodule EventStore.Streams.Stream do
          events,
          expected_version,
          serializer,
+         metadata_serializer,
          opts
        ) do
-    prepared_events = prepare_events(events, stream, serializer)
+    prepared_events = prepare_events(events, stream, serializer, metadata_serializer)
 
     write_to_stream(conn, prepared_events, stream, expected_version, opts)
   end
 
-  defp prepare_events(events, %StreamInfo{} = stream, serializer) do
+  defp prepare_events(events, %StreamInfo{} = stream, serializer, metadata_serializer) do
     %StreamInfo{stream_uuid: stream_uuid, stream_version: stream_version} = stream
 
     events
-    |> Enum.map(&map_to_recorded_event(&1, utc_now(), serializer))
+    |> Enum.map(&map_to_recorded_event(&1, utc_now(), serializer, metadata_serializer))
     |> Enum.with_index(1)
     |> Enum.map(fn {recorded_event, index} ->
       %RecordedEvent{
@@ -183,13 +181,19 @@ defmodule EventStore.Streams.Stream do
   defp map_to_recorded_event(
          %EventData{data: %{__struct__: event_type}, event_type: nil} = event,
          created_at,
-         serializer
+         serializer,
+         metadata_serializer
        ) do
     %{event | event_type: Atom.to_string(event_type)}
-    |> map_to_recorded_event(created_at, serializer)
+    |> map_to_recorded_event(created_at, serializer, metadata_serializer)
   end
 
-  defp map_to_recorded_event(%EventData{} = event_data, created_at, serializer) do
+  defp map_to_recorded_event(
+         %EventData{} = event_data,
+         created_at,
+         serializer,
+         metadata_serializer
+       ) do
     %EventData{
       event_id: event_id,
       causation_id: causation_id,
@@ -205,7 +209,7 @@ defmodule EventStore.Streams.Stream do
       correlation_id: correlation_id,
       event_type: event_type,
       data: serializer.serialize(data),
-      metadata: serializer.serialize(metadata),
+      metadata: metadata_serializer.serialize(metadata),
       created_at: created_at
     }
   end
@@ -237,10 +241,12 @@ defmodule EventStore.Streams.Stream do
     %StreamInfo{stream_id: stream_id} = stream
 
     {serializer, opts} = Keyword.pop(opts, :serializer)
+    {metadata_serializer, opts} = Keyword.pop(opts, :metadata_serializer, serializer)
 
     with {:ok, recorded_events} <-
            Storage.read_stream_forward(conn, stream_id, start_version, count, opts) do
-      deserialized_events = deserialize_recorded_events(recorded_events, serializer)
+      deserialized_events =
+        deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
 
       {:ok, deserialized_events}
     end
@@ -250,10 +256,12 @@ defmodule EventStore.Streams.Stream do
     %StreamInfo{stream_id: stream_id} = stream
 
     {serializer, opts} = Keyword.pop(opts, :serializer)
+    {metadata_serializer, opts} = Keyword.pop(opts, :metadata_serializer, serializer)
 
     with {:ok, recorded_events} <-
            Storage.read_stream_backward(conn, stream_id, start_version, count, opts) do
-      deserialized_events = deserialize_recorded_events(recorded_events, serializer)
+      deserialized_events =
+        deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
 
       {:ok, deserialized_events}
     end
@@ -304,8 +312,8 @@ defmodule EventStore.Streams.Stream do
     )
   end
 
-  defp deserialize_recorded_events(recorded_events, serializer),
-    do: Enum.map(recorded_events, &RecordedEvent.deserialize(&1, serializer))
+  defp deserialize_recorded_events(recorded_events, serializer, metadata_serializer),
+    do: Enum.map(recorded_events, &RecordedEvent.deserialize(&1, serializer, metadata_serializer))
 
   defp soft_delete_stream(conn, stream, opts) do
     %StreamInfo{stream_id: stream_id} = stream
@@ -345,6 +353,27 @@ defmodule EventStore.Streams.Stream do
       :ok
     end
   end
+
+  defp maybe_retry_once(
+         {:error, :duplicate_stream_uuid},
+         conn,
+         stream_uuid,
+         expected_version,
+         events,
+         opts
+       ) do
+    unless Keyword.has_key?(opts, :retried_once) do
+      opts = Keyword.put(opts, :retried_once, true)
+
+      append_to_stream(conn, stream_uuid, expected_version, events, opts)
+    else
+      # We should never get here, but just in case we break something in another
+      # part of the app, this will give us better output in the tests.
+      {:error, :already_retried_once}
+    end
+  end
+
+  defp maybe_retry_once(error, _conn, _stream_uuid, _expected_version, _events, _opts), do: error
 
   defp transaction(conn, transaction_fun, opts) do
     case Postgrex.transaction(conn, transaction_fun, opts) do

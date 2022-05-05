@@ -17,6 +17,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                pool: EventStore.Config.get_pool(),
                timeout: 120_000,
@@ -41,6 +42,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -63,6 +65,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -86,6 +89,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -103,6 +107,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -121,6 +126,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -142,6 +148,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -174,6 +181,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),
@@ -192,6 +200,7 @@ defmodule EventStore.ConfigTest do
     assert Config.parse(config) ==
              [
                enable_hard_deletes: false,
+               metadata_column_data_type: "bytea",
                column_data_type: "bytea",
                schema: "public",
                pool: EventStore.Config.get_pool(),

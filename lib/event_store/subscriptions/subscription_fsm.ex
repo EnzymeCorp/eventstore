@@ -10,13 +10,16 @@ defmodule EventStore.Subscriptions.SubscriptionFsm do
   require Logger
 
   def new(stream_uuid, subscription_name, opts) do
+    serializer = Keyword.fetch!(opts, :serializer)
+
     new(
       data: %SubscriptionState{
         conn: Keyword.fetch!(opts, :conn),
         event_store: Keyword.fetch!(opts, :event_store),
         stream_uuid: stream_uuid,
         subscription_name: subscription_name,
-        serializer: Keyword.fetch!(opts, :serializer),
+        serializer: serializer,
+        metadata_serializer: Keyword.get(opts, :metadata_serializer, serializer),
         schema: Keyword.fetch!(opts, :schema),
         start_from: opts[:start_from] || 0,
         mapper: opts[:mapper],
@@ -456,6 +459,7 @@ defmodule EventStore.Subscriptions.SubscriptionFsm do
       conn: conn,
       schema: schema,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       stream_uuid: stream_uuid,
       last_sent: last_sent,
       max_size: max_size
@@ -463,7 +467,8 @@ defmodule EventStore.Subscriptions.SubscriptionFsm do
 
     Stream.read_stream_forward(conn, stream_uuid, last_sent + 1, max_size,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     )
   end
 

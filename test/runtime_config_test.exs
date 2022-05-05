@@ -47,6 +47,17 @@ defmodule EventStore.RuntimeConfigTest do
           fn -> Config.lookup(TestEventStore) end
         )
       end)
+
+      assert EventStore.all_instances() == [{TestEventStore, name: :test_event_store}]
+    end
+
+    test "should list all running instances" do
+      all_instances = EventStore.all_instances() |> Enum.sort()
+
+      assert all_instances == [
+               {TestEventStore, name: TestEventStore},
+               {TestEventStore, name: :test_event_store}
+             ]
     end
 
     # EventStore has no compile-time configuration
@@ -60,7 +71,8 @@ defmodule EventStore.RuntimeConfigTest do
         password: "postgres",
         database: "eventstore_test",
         hostname: "localhost",
-        serializer: EventStore.JsonSerializer
+        serializer: EventStore.JsonSerializer,
+        metadata_serializer: EventStore.JsonSerializer
       ]
 
       assert {:ok, _pid} = start_supervised({RuntimeConfiguredEventStore, config})
@@ -70,6 +82,7 @@ defmodule EventStore.RuntimeConfigTest do
   defp with_defaults(config) do
     config
     |> Keyword.put_new(:column_data_type, "bytea")
+    |> Keyword.put_new(:metadata_column_data_type, "bytea")
     |> Keyword.put_new(:enable_hard_deletes, false)
     |> Keyword.put_new(:otp_app, :eventstore)
     |> Keyword.put_new(:pool, DBConnection.ConnectionPool)

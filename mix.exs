@@ -2,7 +2,7 @@ defmodule EventStore.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/commanded/eventstore"
-  @version "1.3.1"
+  @version "1.4.0"
 
   def project do
     [
@@ -41,18 +41,17 @@ defmodule EventStore.Mixfile do
     [
       {:elixir_uuid, "~> 1.2"},
       {:fsm, "~> 0.3"},
-      {:gen_stage, "~> 1.0"},
+      {:gen_stage, "~> 1.1"},
       {:postgrex, "~> 0.15"},
 
       # Optional dependencies
-      {:jason, "~> 1.2", optional: true},
+      {:jason, "~> 1.3", optional: true},
       {:poolboy, "~> 1.5", optional: true},
 
       # Development and test tooling
       {:benchfella, "~> 0.3", only: :bench},
-      {:dialyxir, "~> 1.0", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.23", only: :dev},
-      {:mix_test_watch, "~> 1.0", only: :dev}
+      {:dialyxir, "~> 1.1", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 
@@ -155,6 +154,7 @@ defmodule EventStore.Mixfile do
 
   defp dialyzer do
     [
+      ignore_warnings: ".dialyzer_ignore.exs",
       plt_add_apps: [:ex_unit, :jason, :mix],
       plt_add_deps: :app_tree,
       plt_file: {:no_warn, "priv/plts/eventstore.plt"}

@@ -33,13 +33,16 @@ defmodule EventStore.Config do
   defdelegate parse(config), to: EventStore.Config.Parser
 
   @doc false
-  defdelegate associate(event_store, pid, config), to: EventStore.Config.Store
+  defdelegate all, to: EventStore.Config.Store
 
   @doc false
-  defdelegate lookup(event_store), to: EventStore.Config.Store, as: :get
+  defdelegate associate(name, pid, event_store, config), to: EventStore.Config.Store
 
   @doc false
-  defdelegate lookup(event_store, setting), to: EventStore.Config.Store, as: :get
+  defdelegate lookup(name), to: EventStore.Config.Store, as: :get
+
+  @doc false
+  defdelegate lookup(name, setting), to: EventStore.Config.Store, as: :get
 
   @doc """
   Get the data type used to store event data and metadata.
@@ -53,6 +56,19 @@ defmodule EventStore.Config do
   """
   def column_data_type(event_store, config) do
     case Keyword.get(config, :column_data_type, "bytea") do
+      valid when valid in ["bytea", "jsonb"] ->
+        valid
+
+      invalid ->
+        raise ArgumentError,
+              inspect(event_store) <>
+                " `:column_data_type` expects either \"bytea\" or \"jsonb\" but got: " <>
+                inspect(invalid)
+    end
+  end
+
+  def metadata_column_data_type(event_store, config) do
+    case Keyword.get(config, :metadata_column_data_type, column_data_type(event_store, config)) do
       valid when valid in ["bytea", "jsonb"] ->
         valid
 
@@ -80,7 +96,8 @@ defmodule EventStore.Config do
     :pool,
     :pool_size,
     :queue_target,
-    :queue_interval
+    :queue_interval,
+    :socket_options
   ]
 
   def default_postgrex_opts(config) do

@@ -89,7 +89,7 @@ defmodule EventStore.Supervisor do
             {Notifications.Supervisor, {name, config}}
           ] ++ PubSub.child_spec(name)
 
-        :ok = Config.associate(name, self(), config)
+        :ok = Config.associate(name, self(), event_store, config)
 
         Supervisor.init(children, strategy: :one_for_all)
 
@@ -111,14 +111,18 @@ defmodule EventStore.Supervisor do
   defp validate_config!(event_store, name, config) do
     conn = postgrex_conn(name, config)
     column_data_type = Config.column_data_type(event_store, config)
+    metadata_column_data_type = Config.metadata_column_data_type(event_store, config)
     serializer = Serializer.serializer(event_store, config)
+    metadata_serializer = Serializer.metadata_serializer(event_store, config)
     subscription_retry_interval = Subscriptions.retry_interval(event_store, config)
     subscription_hibernate_after = Subscriptions.hibernate_after(event_store, config)
 
     Keyword.merge(config,
       conn: conn,
       column_data_type: column_data_type,
+      metadata_column_data_type: metadata_column_data_type,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       subscription_retry_interval: subscription_retry_interval,
       subscription_hibernate_after: subscription_hibernate_after
     )

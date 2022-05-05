@@ -23,6 +23,7 @@ defmodule EventStore do
 
       config :my_app, MyApp.EventStore,
         serializer: EventStore.JsonSerializer,
+        metadata_serializer: EventStore.JsonSerializer,
         username: "postgres",
         password: "postgres",
         database: "eventstore",
@@ -220,6 +221,15 @@ defmodule EventStore do
           | {:conn, Postgrex.conn() | DBConnection.t()}
           | {:timeout, timeout()}
   @type options :: [option]
+  @type pagination_option ::
+          option
+          | {:page_size, pos_integer()}
+          | {:page_number, pos_integer()}
+          | {:search, String.t()}
+          | {:sort_by,
+             :stream_uuid | :stream_id | :stream_version | :created_at | :deleted_at | :status}
+          | {:sort_dir, :asc | :desc}
+  @type pagination_options :: [pagination_option]
   @type transient_subscribe_option ::
           {:name, atom}
           | {:selector, (EventStore.RecordedEvent.t() -> any())}
@@ -404,6 +414,26 @@ defmodule EventStore do
         Stream.delete(conn, stream_uuid, expected_version, type, opts)
       end
 
+      def paginate_streams(opts \\ []) do
+        pagination_opts =
+          Keyword.take(opts, [:page_size, :page_number, :search, :sort_by, :sort_dir])
+
+        {conn, opts} = parse_opts(opts)
+
+        opts = Keyword.merge(opts, pagination_opts)
+
+        Stream.paginate_streams(conn, opts)
+      end
+
+      def stream_info(stream_uuid, opts \\ [])
+      def stream_info(:all, opts), do: stream_info(@all_stream, opts)
+
+      def stream_info(stream_uuid, opts) do
+        {conn, opts} = parse_opts(opts)
+
+        Stream.stream_info(conn, stream_uuid, :stream_exists, opts)
+      end
+
       def subscribe(stream_uuid, opts \\ []) do
         name = name(opts)
 
@@ -416,6 +446,7 @@ defmodule EventStore do
         conn = Keyword.fetch!(config, :conn)
         schema = Keyword.fetch!(config, :schema)
         serializer = Keyword.fetch!(config, :serializer)
+        metadata_serializer = Keyword.fetch!(config, :metadata_serializer)
 
         with {start_from, opts} <- Keyword.pop(opts, :start_from, :origin),
              {:ok, start_from} <- Stream.start_from(conn, stream_uuid, start_from, schema: schema) do
@@ -430,6 +461,7 @@ defmodule EventStore do
               event_store: name,
               schema: schema,
               serializer: serializer,
+              metadata_serializer: metadata_serializer,
               stream_uuid: stream_uuid,
               subscription_name: subscription_name,
               start_from: start_from
@@ -529,8 +561,9 @@ defmodule EventStore do
     end
   end
 
-  alias EventStore.EventData
+  alias EventStore.{Config, EventData, Page}
   alias EventStore.Snapshots.SnapshotData
+  alias EventStore.Streams.StreamInfo
 
   ## User callbacks
   @optional_callbacks init: 1
@@ -942,6 +975,71 @@ defmodule EventStore do
               | {:error, term}
 
   @doc """
+  Paginate all streams.
+
+    - `opts` an optional keyword list containing:
+
+      - `page_size` the total number of streams per page. Defaults to 50.
+
+      - `page_number` the current page number. Defaults to page 1.
+
+      - `search` search for a stream by its identity.
+
+      - `sort_by` sort the streams by the given field.
+        Defaults to sorting by the stream's internal id (`:stream_id` field)
+
+      - `sort_dir` direction to sort streams by, either `:asc` or `:desc`.
+        Defaults to `:asc`.
+
+      - `name` the name of the event store if provided to `start_link/1`.
+        Defaults to the event store module name (e.g. `MyApp.EventStore`).
+
+      - `timeout` an optional timeout for the database transaction, in
+        milliseconds. Defaults to 15,000ms.
+
+  Returns an `{:ok, page}` result containing a list of `StreamInfo` structs, or
+  an error tagged tuple on failure.
+
+  ### Example
+
+      alias EventStore.Page
+
+      {:ok, %Page{entries: streams}} = MyApp.EventStore.paginate_streams()
+
+  """
+  @callback paginate_streams(opts :: pagination_options()) ::
+              {:ok, Page.t(StreamInfo.t())} | {:error, any()}
+
+  @doc """
+  Get basic information about a stream, including its version, status, and
+  created date.
+
+    - `opts` an optional keyword list containing:
+      - `name` the name of the event store if provided to `start_link/1`.
+      - `timeout` an optional timeout for the database transaction, in
+        milliseconds. Defaults to 15,000ms.
+
+    Returns `{:ok, StreamInfo.t()}` on success, or an `{:error, reason}` tagged
+    tuple. The returned error may be due to one of the following reasons:
+
+      - `{:error, :stream_not_found}` when the stream does not exist.
+      - `{:error, :stream_deleted}` when the stream was soft deleted.
+
+  ### Example
+
+      alias EventStore.Streams.StreamInfo
+
+      {:ok, %StreamInfo{stream_version: stream_version}} =
+        MyApp.EventStore.stream_info("stream-1234")
+
+  """
+  @callback stream_info(stream_uuid :: String.t() | :all, opts :: options()) ::
+              {:ok, StreamInfo.t()}
+              | {:error, :stream_not_found}
+              | {:error, :stream_deleted}
+              | {:error, reason :: term}
+
+  @doc """
   Create a transient subscription to a given stream.
 
     - `stream_uuid` is the stream to subscribe to.
@@ -1299,4 +1397,16 @@ defmodule EventStore do
   """
   @callback delete_snapshot(source_uuid :: String.t(), opts :: options) ::
               :ok | {:error, reason :: term}
+
+  @doc """
+  Returns all running EventStore instances.
+
+  Note that order is not guaranteed.
+  """
+  @spec all_instances :: list({event_store :: module(), [{:name, atom()}]})
+  def all_instances do
+    for {event_store, name} <- Config.all(), Process.whereis(name) do
+      {event_store, [name: name]}
+    end
+  end
 end

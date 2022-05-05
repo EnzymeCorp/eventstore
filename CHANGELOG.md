@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.4.0
+
+- List running event store instances ([#244](https://github.com/commanded/eventstore/pull/244)).
+- Paginate streams ([#246](https://github.com/commanded/eventstore/pull/246)).
+- Add `stream_info/2` function ([#247](https://github.com/commanded/eventstore/pull/247)).
+
+---
+
+## v1.3.2
+
+### Enhancements
+
+- Add postgrex `socket_options` option ([#242](https://github.com/commanded/eventstore/pull/242)).
+
+### Bug fixes
+
+- Fix bug with subscriptions trigger in older Postgres versions ([#241](https://github.com/commanded/eventstore/pull/241)).
+
+### Upgrading
+
+This release includes a database migration to be run. Please read the [Upgrading an EventStore](https://hexdocs.pm/eventstore/upgrades.html) guide for details on how to migrate an existing database.
+
 ## v1.3.1
 
 ### Bug fixes

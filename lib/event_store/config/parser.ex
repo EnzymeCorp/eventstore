@@ -16,6 +16,7 @@ defmodule EventStore.Config.Parser do
     |> Keyword.put(:pool, EventStore.Config.get_pool())
     |> Keyword.put_new(:schema, "public")
     |> Keyword.put_new(:column_data_type, "bytea")
+    |> Keyword.put_new(:metadata_column_data_type, "bytea")
     |> Keyword.put_new(:enable_hard_deletes, false)
   end
 
