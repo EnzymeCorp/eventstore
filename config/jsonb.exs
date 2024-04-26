@@ -10,8 +10,6 @@ config :ex_unit,
 default_config = [
   column_data_type: "jsonb",
   metadata_column_data_type: "jsonb",
-  username: "postgres",
-  password: "postgres",
   database: "eventstore_jsonb_test",
   hostname: "localhost",
   pool_size: 1,

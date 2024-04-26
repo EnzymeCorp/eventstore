@@ -3,6 +3,7 @@ defmodule EventStore.Config.Parser do
 
   @config_defaults [
     column_data_type: "bytea",
+    metadata_column_data_type: "bytea",
     enable_hard_deletes: false,
     schema: "public",
     timeout: 15_000
