@@ -15,12 +15,14 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should fetch events from all streams", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       {:ok, read_events} =
         Stream.read_stream_forward(conn, @all_stream, 0, 1_000,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
 
       assert length(read_events) == 6
@@ -34,6 +36,7 @@ defmodule EventStore.Streams.AllStreamTest do
       conn: conn,
       schema: schema,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       stream1_uuid: stream1_uuid,
       stream2_uuid: stream2_uuid
     } do
@@ -41,7 +44,8 @@ defmodule EventStore.Streams.AllStreamTest do
         Stream.stream_forward(conn, @all_stream, 0,
           read_batch_size: 1,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -62,13 +66,15 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should stream events from all streams using two event batch size", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       read_events =
         Stream.stream_forward(conn, @all_stream, 0,
           read_batch_size: 2,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -80,13 +86,15 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should stream events from all streams using large batch size", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       read_events =
         Stream.stream_forward(conn, @all_stream, 0,
           read_batch_size: 1_000,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -103,6 +111,7 @@ defmodule EventStore.Streams.AllStreamTest do
       conn: conn,
       schema: schema,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       stream1_uuid: stream1_uuid,
       stream2_uuid: stream2_uuid
     } do
@@ -110,7 +119,8 @@ defmodule EventStore.Streams.AllStreamTest do
         Stream.stream_backward(conn, @all_stream, -1,
           read_batch_size: 1,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -131,13 +141,15 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should stream events from all streams using two event batch size", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       read_events =
         Stream.stream_backward(conn, @all_stream, -1,
           read_batch_size: 2,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -149,13 +161,15 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should stream events from all streams using large batch size", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       read_events =
         Stream.stream_backward(conn, @all_stream, -1,
           read_batch_size: 1_000,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -167,13 +181,15 @@ defmodule EventStore.Streams.AllStreamTest do
     test "should stream events from all streams using offset", %{
       conn: conn,
       schema: schema,
-      serializer: serializer
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
     } do
       read_events =
         Stream.stream_backward(conn, @all_stream, 3,
           read_batch_size: 1_000,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
         |> Enum.to_list()
 
@@ -210,6 +226,7 @@ defmodule EventStore.Streams.AllStreamTest do
     test "from current should receive only new events", %{
       conn: conn,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       schema: schema,
       stream1_uuid: stream1_uuid
     } do
@@ -230,7 +247,8 @@ defmodule EventStore.Streams.AllStreamTest do
       :ok =
         Stream.append_to_stream(conn, stream1_uuid, 3, events,
           schema: schema,
-          serializer: serializer
+          serializer: serializer,
+          metadata_serializer: metadata_serializer
         )
 
       assert_receive {:events, received_events}
@@ -260,13 +278,26 @@ defmodule EventStore.Streams.AllStreamTest do
   end
 
   defp append_events_to_streams(context) do
-    %{conn: conn, schema: schema, serializer: serializer} = context
+    %{
+      conn: conn,
+      schema: schema,
+      serializer: serializer,
+      metadata_serializer: metadata_serializer
+    } = context
 
     {stream1_uuid, stream1_events} =
-      append_events_to_stream(conn, schema: schema, serializer: serializer)
+      append_events_to_stream(conn,
+        schema: schema,
+        serializer: serializer,
+        metadata_serializer: metadata_serializer
+      )
 
     {stream2_uuid, stream2_events} =
-      append_events_to_stream(conn, schema: schema, serializer: serializer)
+      append_events_to_stream(conn,
+        schema: schema,
+        serializer: serializer,
+        metadata_serializer: metadata_serializer
+      )
 
     [
       stream1_uuid: stream1_uuid,

@@ -10,7 +10,16 @@ defmodule EventStore.Streams.Stream do
     {metadata_serializer, new_opts} = Keyword.pop(new_opts, :metadata_serializer)
 
     with {:ok, stream} <- stream_info(conn, stream_uuid, expected_version, new_opts),
-         :ok <- do_append_to_storage(conn, stream, events, expected_version, serializer, metadata_serializer, new_opts) do
+         :ok <-
+           do_append_to_storage(
+             conn,
+             stream,
+             events,
+             expected_version,
+             serializer,
+             metadata_serializer,
+             new_opts
+           ) do
       :ok
     end
     |> maybe_retry_once(conn, stream_uuid, expected_version, events, opts)
@@ -179,7 +188,12 @@ defmodule EventStore.Streams.Stream do
     |> map_to_recorded_event(created_at, serializer, metadata_serializer)
   end
 
-  defp map_to_recorded_event(%EventData{} = event_data, created_at, serializer, metadata_serializer) do
+  defp map_to_recorded_event(
+         %EventData{} = event_data,
+         created_at,
+         serializer,
+         metadata_serializer
+       ) do
     %EventData{
       event_id: event_id,
       causation_id: causation_id,
@@ -231,7 +245,8 @@ defmodule EventStore.Streams.Stream do
 
     with {:ok, recorded_events} <-
            Storage.read_stream_forward(conn, stream_id, start_version, count, opts) do
-      deserialized_events = deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
+      deserialized_events =
+        deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
 
       {:ok, deserialized_events}
     end
@@ -245,7 +260,8 @@ defmodule EventStore.Streams.Stream do
 
     with {:ok, recorded_events} <-
            Storage.read_stream_backward(conn, stream_id, start_version, count, opts) do
-      deserialized_events = deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
+      deserialized_events =
+        deserialize_recorded_events(recorded_events, serializer, metadata_serializer)
 
       {:ok, deserialized_events}
     end

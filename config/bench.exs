@@ -14,6 +14,7 @@ default_config = [
   hostname: "localhost",
   pool_size: 10,
   serializer: EventStore.TermSerializer
+  metadata_serializer: EventStore.TemSerializer
 ]
 
 config :eventstore, TestEventStore, default_config

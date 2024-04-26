@@ -160,6 +160,7 @@ defmodule EventStore.Subscriptions.SubscriptionLockingTest do
       schema: schema,
       event_store: event_store,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       subscription_name: subscription_name
     } = context
 
@@ -169,6 +170,7 @@ defmodule EventStore.Subscriptions.SubscriptionLockingTest do
         conn: conn,
         schema: schema,
         serializer: serializer,
+        metadata_serializer: metadata_serializer,
         retry_interval: 1_000,
         stream_uuid: "$all",
         subscription_name: subscription_name,
