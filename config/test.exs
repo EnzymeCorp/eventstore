@@ -9,6 +9,8 @@ config :ex_unit,
 
 default_config = [
   idle_interval: 100,
+  username: "postgres",
+  password: "postgres",
   database: "eventstore_test",
   hostname: "localhost",
   pool_size: 1,

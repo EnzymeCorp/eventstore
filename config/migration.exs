@@ -8,6 +8,8 @@ config :ex_unit,
   refute_receive_timeout: 100
 
 default_config = [
+  username: "postgres",
+  password: "postgres",
   database: "eventstore_migration_test",
   hostname: "localhost",
   pool_size: 1,
