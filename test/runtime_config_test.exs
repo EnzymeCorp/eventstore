@@ -71,7 +71,8 @@ defmodule EventStore.RuntimeConfigTest do
         password: "postgres",
         database: "eventstore_test",
         hostname: "localhost",
-        serializer: EventStore.JsonSerializer
+        serializer: EventStore.JsonSerializer,
+        metadata_serializer: EventStore.JsonSerializer
       ]
 
       assert {:ok, _pid} = start_supervised({RuntimeConfiguredEventStore, config})
@@ -82,6 +83,7 @@ defmodule EventStore.RuntimeConfigTest do
     Keyword.merge(
       [
         column_data_type: "bytea",
+        metadata_column_data_type: "bytea",
         enable_hard_deletes: false,
         otp_app: :eventstore,
         pool: DBConnection.ConnectionPool,

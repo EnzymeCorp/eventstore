@@ -440,6 +440,7 @@ defmodule EventStore.Subscriptions.StreamSubscriptionTestCase do
       %{
         schema: schema,
         serializer: serializer,
+        metadata_serializer: metadata_serializer,
         stream_uuid: stream_uuid,
         subscriber: subscriber
       } = context
@@ -450,6 +451,7 @@ defmodule EventStore.Subscriptions.StreamSubscriptionTestCase do
         |> Keyword.put(:event_store, @event_store)
         |> Keyword.put(:schema, schema)
         |> Keyword.put(:serializer, serializer)
+        |> Keyword.put(:metadata_serializer, metadata_serializer)
         |> Keyword.put_new(:buffer_size, 3)
 
       stream_uuid

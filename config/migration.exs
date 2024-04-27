@@ -14,6 +14,7 @@ default_config = [
   hostname: "localhost",
   pool_size: 1,
   serializer: EventStore.JsonSerializer,
+  metadata_serializer: EventStore.JsonSerializer,
   subscription_retry_interval: 1_000
 ]
 

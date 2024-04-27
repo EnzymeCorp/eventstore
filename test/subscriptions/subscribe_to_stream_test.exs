@@ -30,6 +30,7 @@ defmodule EventStore.Subscriptions.SubscribeToStreamTest do
     test "should receive `:subscribed` message once subscribed", %{
       schema: schema,
       serializer: serializer,
+      metadata_serializer: metadata_serializer,
       subscription_name: subscription_name
     } do
       stream_uuid = UUID.uuid4()
@@ -40,6 +41,7 @@ defmodule EventStore.Subscriptions.SubscribeToStreamTest do
           conn: @conn,
           schema: schema,
           serializer: serializer,
+          metadata_serializer: metadata_serializer,
           hibernate_after: 15_000,
           retry_interval: 1_000,
           stream_uuid: stream_uuid,
