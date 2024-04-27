@@ -13,8 +13,8 @@ default_config = [
   database: "eventstore_bench",
   hostname: "localhost",
   pool_size: 10,
-  serializer: EventStore.TermSerializer
-  metadata_serializer: EventStore.TemSerializer
+  serializer: EventStore.TermSerializer,
+  metadata_serializer: EventStore.TermSerializer
 ]
 
 config :eventstore, TestEventStore, default_config
